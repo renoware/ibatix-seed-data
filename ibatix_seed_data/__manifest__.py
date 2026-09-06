@@ -1,6 +1,6 @@
 {
     'name': 'IBATIX Seed Data — Fiches ADEME + Guide ANAH',
-    'version': '19.0.2.1.0',
+    'version': '19.0.2.2.0',
     'category': 'IBATIX',
     'summary': 'Données de référence (PDFs) pour les opérations CEE et la MaPrimeRénov\'',
     'description': """
@@ -13,7 +13,7 @@ attachments mis à jour, opérations CEE alignées sur l'instantané PROD
 (274 opérations, analyses Claude + paramètres MPR/bonification).
     """,
     'author': 'IBATIX',
-    'depends': ['objets_ibatix'],
+    'depends': ['objets_ibatix', 'ibatix_calcul_cee'],
     'data': ['data/seed.xml'],
     'post_init_hook': 'post_init_hook',
     'installable': True,
