@@ -21,6 +21,7 @@ def post_init_hook(env):
     _seed_cee_pdfs(env)
     _seed_anah_guide(env)
     _seed_cee_analyses(env)
+    _seed_delegataire_defaut(env)
 
 
 def _read_b64(path):
@@ -166,3 +167,34 @@ def _seed_cee_analyses(env):
         "ibatix_seed_data: opérations CEE — %d mises à jour, %d créées, %d lignes invalides",
         updated, created, invalid,
     )
+
+
+DELEGATAIRE_DEMO = 'Délégataire CEE de démonstration'
+
+
+def _seed_delegataire_defaut(env):
+    """Sans délégataire ni contrat CEE, aucune prime ne se calcule sur un
+    devis (la valorisation €/MWhc vient du contrat). Un client flotte naît
+    sans aucun des deux : on pose un délégataire de démonstration par défaut,
+    UNIQUEMENT si la base n'en a aucun, à remplacer par le vrai contrat."""
+    from datetime import date
+    Delegataire = env['ibatix.delegataire.cee'].sudo()
+    if Delegataire.search_count([]):
+        return
+    d = Delegataire.create({
+        'name': DELEGATAIRE_DEMO,
+        'is_default': True,
+        'actif_devis': True,
+    })
+    today = date.today()
+    env['ibatix.delegataire.contrat'].sudo().create({
+        'delegataire_id': d.id,
+        'numero_contrat': 'DEMO — à remplacer',
+        'date_debut': today.replace(month=1, day=1),
+        'date_fin': today.replace(year=today.year + 1, month=12, day=31),
+        'valo_classique_client': 6.5,
+        'valo_precaire_client': 7.5,
+        'valo_classique_reelle': 7.0,
+        'valo_precaire_reelle': 8.0,
+    })
+    _logger.info("ibatix_seed_data: délégataire CEE de démonstration créé (aucun délégataire en base)")

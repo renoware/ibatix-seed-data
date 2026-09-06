@@ -56,3 +56,10 @@ Rafraîchir depuis PROD :
 bash scripts/export_cee_analyses.sh > ibatix_seed_data/data/cee_analyses.jsonl
 # bump la version du manifest, commit, push ; puis -u ibatix_seed_data sur chaque client
 ```
+
+## Délégataire CEE de démonstration
+
+Si la base n'a aucun délégataire CEE, le chargeur en crée un (« Délégataire
+CEE de démonstration », par défaut, actif devis) avec un contrat DEMO
+(6,5 / 7,5 €/MWhc) : sans contrat, aucune prime CEE ne se calcule. À remplacer
+par le vrai délégataire du client ; jamais recréé s'il en existe un.
