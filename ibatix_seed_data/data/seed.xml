@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Rejoué à chaque install / upgrade du module : fiches PDF, guide ANAH,
+         analyses et paramètres des opérations CEE (instantané PROD). -->
+    <function model="ibatix.seed.data" name="run"/>
+</odoo>

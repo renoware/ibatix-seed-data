@@ -1,0 +1,4 @@
+#!/bin/bash
+# Exporte les opérations CEE de PROD (82.165.222.171) en JSONL pour data/cee_analyses.jsonl.
+set -e
+ssh root@82.165.222.171 'docker exec odoo19_db psql -U odoo -d ibatix -At -c "SELECT row_to_json(t) FROM (SELECT o.code, coalesce(o.name->>'"'"'fr_FR'"'"', o.name->>'"'"'en_US'"'"') AS name, o.secteur, o.active, o.abrogee, (SELECT array_agg(d.module||'"'"'.'"'"'||d.name) FROM ir_model_data d WHERE d.model='"'"'ibatix.operation.cee'"'"' AND d.res_id=o.id) AS xmlids, o.champs_requis, o.formule_description, o.formule_cumac_python, o.formule_analysee, o.guide_html, o.champs_eligibilite, o.type_calcul_mpr, o.prime_mpr_bleu, o.prime_mpr_jaune, o.prime_mpr_violet, o.plafond_depense_mpr, o.eligible_mpr, o.cible, o.bonification_type, o.bien_type_maison, o.bien_type_appartement, o.bien_type_collectif, o.bien_type_tertiaire, o.formule_verifiee, o.formule_verifiee_date, o.fiche_date_validite, o.write_date FROM ibatix_operation_cee o ORDER BY o.code) t;"'

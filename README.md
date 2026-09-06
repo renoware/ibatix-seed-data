@@ -39,3 +39,20 @@ Quand l'ADEME publie de nouvelles fiches, drop les PDFs dans
 push. Tous les clients récupèrent via `Refresh available` puis
 `Synchroniser sélection` sur `ibatix_seed_data` (passe `-u` qui
 re-déclenche le hook).
+
+## Analyses et paramètres des opérations CEE (instantané PROD)
+
+`data/cee_analyses.jsonl` : 274 opérations `ibatix.operation.cee` exportées de
+PROD (guide technique Claude, champs requis/éligibilité, formule cumac,
+paramètres MPR, cible, bonification, types de bien, état actif/abrogé).
+PROD est la source de vérité ; le chargeur écrase ces champs sur le client,
+rapproche par xmlid puis par code, et crée les fiches absentes.
+
+Rejoué à chaque `-u ibatix_seed_data` (`data/seed.xml` → `ibatix.seed.data.run`).
+
+Rafraîchir depuis PROD :
+
+```bash
+bash scripts/export_cee_analyses.sh > ibatix_seed_data/data/cee_analyses.jsonl
+# bump la version du manifest, commit, push ; puis -u ibatix_seed_data sur chaque client
+```

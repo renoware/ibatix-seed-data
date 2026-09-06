@@ -17,17 +17,6 @@ ANAH_GUIDE_NAME = 'Anah-FR-Guide_des_aides_Fev2026_WEB_20260224.pdf'
 ANAH_GUIDE_FILE = 'anah_guide_2026.pdf'
 CEE_ANALYSES_FILE = 'cee_analyses.jsonl'
 
-# Champs de ibatix.operation.cee importés depuis le snapshot PROD.
-ANALYSIS_FIELDS = (
-    'guide_html',
-    'champs_eligibilite',
-    'champs_requis',
-    'formule_analysee',
-    'formule_cumac_python',
-    'formule_description',
-)
-
-
 def post_init_hook(env):
     _seed_cee_pdfs(env)
     _seed_anah_guide(env)
@@ -108,18 +97,37 @@ def _seed_anah_guide(env):
         _logger.info("ibatix_seed_data: guide ANAH créé")
 
 
+# Champs de ibatix.operation.cee importés depuis l'instantané PROD.
+# PROD est la source de vérité : analyses Claude (guide, formule, champs) et
+# paramètres métier tenus en PROD (MPR, cible, bonification, types de bien,
+# vérification de formule, état actif/abrogé).
+SEED_FIELDS = (
+    'active', 'abrogee',
+    'guide_html', 'champs_eligibilite', 'champs_requis',
+    'formule_analysee', 'formule_cumac_python', 'formule_description',
+    'type_calcul_mpr', 'prime_mpr_bleu', 'prime_mpr_jaune', 'prime_mpr_violet',
+    'plafond_depense_mpr', 'eligible_mpr', 'cible', 'bonification_type',
+    'bien_type_maison', 'bien_type_appartement', 'bien_type_collectif',
+    'bien_type_tertiaire', 'formule_verifiee', 'formule_verifiee_date',
+    'fiche_date_validite',
+)
+
+
 def _seed_cee_analyses(env):
-    """Seed les analyses Claude (guide_html + formules) depuis un snapshot
-    JSONL exporté de PROD. Sauf si l'opération a DÉJÀ été (re)analysée par
-    l'utilisateur du client (formule_cumac_python non vide), pour éviter
-    d'écraser un fix manuel."""
-    Operation = env['ibatix.operation.cee']
+    """Aligne les opérations CEE sur l'instantané PROD (`cee_analyses.jsonl`).
+
+    Rapprochement par identifiant de module (xmlid) puis par code de fiche ;
+    création si l'opération n'existe pas (fiches créées à la main en PROD).
+    Les champs de SEED_FIELDS sont écrasés : une analyse locale sur un client
+    est un cas exceptionnel, à reporter en PROD puis à ré-exporter.
+    """
+    Operation = env['ibatix.operation.cee'].sudo().with_context(active_test=False)
     jsonl_path = os.path.join(DATA_DIR, CEE_ANALYSES_FILE)
     if not os.path.isfile(jsonl_path):
         _logger.warning("ibatix_seed_data: %s introuvable, skip analyses CEE", jsonl_path)
         return
 
-    created = preserved = skipped = 0
+    created = updated = invalid = 0
     with open(jsonl_path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
@@ -129,24 +137,32 @@ def _seed_cee_analyses(env):
                 rec = json.loads(line)
             except json.JSONDecodeError as e:
                 _logger.warning("ibatix_seed_data: JSON invalide → %s", e)
+                invalid += 1
                 continue
             code = rec.get('code')
             if not code:
+                invalid += 1
                 continue
-            op = Operation.search([('code', '=', code)], limit=1)
+            op = Operation.browse()
+            for xmlid in rec.get('xmlids') or ():
+                op = env.ref(xmlid, raise_if_not_found=False) or Operation.browse()
+                if op:
+                    break
             if not op:
-                skipped += 1
-                continue
-            # Respect du travail local du client : si une analyse existe déjà
-            # (cumac formule non vide), on ne touche pas.
-            if op.formule_cumac_python:
-                preserved += 1
-                continue
-            vals = {k: rec.get(k) for k in ANALYSIS_FIELDS if rec.get(k) is not None}
-            if vals:
+                op = Operation.search([('code', '=', code)], limit=1)
+            vals = {k: (rec.get(k) if rec.get(k) is not None else False) for k in SEED_FIELDS}
+            if op:
                 op.write(vals)
+                updated += 1
+            else:
+                vals.update({
+                    'code': code,
+                    'name': rec.get('name') or code,
+                    'secteur': rec.get('secteur') or False,
+                })
+                Operation.with_context(lang='fr_FR').create(vals)
                 created += 1
     _logger.info(
-        "ibatix_seed_data: analyses CEE — %d seedées, %d préservées (déjà analysées), %d sans op en base",
-        created, preserved, skipped,
+        "ibatix_seed_data: opérations CEE — %d mises à jour, %d créées, %d lignes invalides",
+        updated, created, invalid,
     )
