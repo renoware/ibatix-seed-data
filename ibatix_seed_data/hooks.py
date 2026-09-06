@@ -30,7 +30,9 @@ def _read_b64(path):
 
 
 def _seed_cee_pdfs(env):
-    Operation = env['ibatix.operation.cee']
+    # active_test=False : PROD n'a que 26 opérations actives sur 274, les
+    # fiches PDF des opérations archivées doivent quand même être posées.
+    Operation = env['ibatix.operation.cee'].with_context(active_test=False)
     Attachment = env['ir.attachment']
     cee_dir = os.path.join(PDF_DIR, 'cee')
     if not os.path.isdir(cee_dir):
