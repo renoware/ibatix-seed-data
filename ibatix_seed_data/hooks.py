@@ -113,6 +113,10 @@ SEED_FIELDS = (
     'bien_type_maison', 'bien_type_appartement', 'bien_type_collectif',
     'bien_type_tertiaire', 'formule_verifiee', 'formule_verifiee_date',
     'fiche_date_validite',
+    # Fin du parcours MPR par geste (décret 2026-822). Posée par CODE dans
+    # ibatix_calcul_cee, elle manquait aux fiches dont le code diffère entre
+    # PROD et les clients (BAR-EN-101-RT ↔ BAR-EN-101, S00059 GRB 18/10/2026).
+    'mpr_date_fin',
 )
 
 
